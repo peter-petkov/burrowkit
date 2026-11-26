@@ -6,6 +6,7 @@
 //   node node_modules/burrowkit/tools/serve.mjs <root> [port]
 //
 // or, from a tool, createStaticServer(root).
+import { realpathSync } from "node:fs";
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, join, normalize, resolve, sep } from "node:path";
@@ -55,8 +56,8 @@ export function createStaticServer(root, { index = "/docs/index.html" } = {}) {
     });
 }
 
-// From the command line.
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+// From the command line, also through a link to it (as node_modules/burrowkit is in the npm workspace).
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
     const root = resolve(process.argv[2] ?? ".");
     const port = Number(process.argv[3] ?? 5173);
     createStaticServer(root).listen(port, () => console.log(`serving ${root} on ${port}`));
