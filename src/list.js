@@ -644,6 +644,44 @@ export default class RowList {
     }
 
     // -----------------------------------------------------------------
+    // Moving between rows (the component focuses the row, or marks it active)
+    // -----------------------------------------------------------------
+
+    /**
+     * The row `step` rows after a record's, or before it for a negative step, as the arrow keys move; from no record,
+     * the first row going down and the last going up. It stops at either end. Moving down past the last rendered row
+     * renders the next batch first, so the keys never stall at the end of a longer list. Undefined when there are no
+     * rows.
+     */
+    move(record, step) {
+        const index = record ? this.#rows.indexOf(record) : step > 0 ? -1 : this.#rows.length;
+        const wanted = index + step;
+
+        while (wanted >= this.#rows.length && this.hasMore) this.renderMore(this.stepSize, Infinity);
+
+        return this.#rows[Math.min(Math.max(wanted, 0), this.#rows.length - 1)];
+    }
+
+    /**
+     * The row a jump from a record's lands on: by pages (-1 or 1, as many rows as fit in the scroller) or at an end
+     * (-Infinity or Infinity), as Page Up, Page Down, Home and End move. Rows that aren't rendered yet are rendered
+     * first, so End reaches the last match of a long list. Undefined when there are no rows.
+     */
+    jump(record, pages) {
+        const index = record ? this.#rows.indexOf(record) : -1;
+        const { top, bottom } = this.covered;
+        const room = this.#hooks.scroller().clientHeight - top - bottom;
+        const rowHeight = (record ?? this.#rows[0])?.element.offsetHeight || 32;
+        const pageSize = Math.max(1, Math.floor(room / rowHeight) - 1);
+        const wanted = Number.isFinite(pages) ? index + pages * pageSize : pages;
+
+        while (wanted >= this.#rows.length && this.hasMore)
+            this.renderMore(wanted === Infinity ? Infinity : this.stepSize, Infinity);
+
+        return this.#rows[Math.min(Math.max(wanted, 0), this.#rows.length - 1)];
+    }
+
+    // -----------------------------------------------------------------
     // Scrolling
     // -----------------------------------------------------------------
 

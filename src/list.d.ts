@@ -82,6 +82,13 @@ export default class RowList<Entry extends ViewEntry = ViewEntry, Parts extends 
     /** Shows a view of changed entries, keeping the rows still shown. */
     reconcile(view: FilteredView<Entry>): void;
     syncSetSize(): void;
+    /**
+     * The row `step` rows from a record's (from none: the first going down, the last going up), stopping at either
+     * end, rendering the next batch first when moving past the last rendered row.
+     */
+    move(record: RowRecord<Entry, Parts> | null | undefined, step: number): RowRecord<Entry, Parts> | undefined;
+    /** The row a jump by pages (-1, 1) or to an end (-Infinity, Infinity) lands on, rendering ahead as need be. */
+    jump(record: RowRecord<Entry, Parts> | null | undefined, pages: number): RowRecord<Entry, Parts> | undefined;
     highlightText(view: FilteredView<Entry>, owner: object, key: string, node: Text | null | undefined): void;
     /** Scrolls an element of the list into view, centred or by the least amount. */
     reveal(element: Element, center: boolean): void;

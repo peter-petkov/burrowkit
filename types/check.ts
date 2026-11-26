@@ -84,6 +84,8 @@ const rowText: string | undefined = record?.text.data;
 const rendered: boolean = rowList.ensureRendered(entries[0]) && rowList.hasMore && rowList.isBatched;
 const shownCount: number = rowList.shownCount + rowList.rows.length;
 rowList.reveal(rowList.element, true);
+const next: RowRecord<Entry, { text: Text }> | undefined = rowList.move(record, 1) ?? rowList.move(null, -1);
+rowList.jump(next, Infinity)?.element.focus();
 rowList.renderHeader(group);
 rowList.destroy();
 new RowList<Entry, {}>({ container: popover, classes: listClasses, highlighter, signal: new AbortController().signal,
