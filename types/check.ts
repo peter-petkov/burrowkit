@@ -1,6 +1,7 @@
 // Uses every public member the way a component does, so that npm run check:types fails when the definitions drift
 // from the code. Lines marked @ts-expect-error must stay errors. Nothing here runs.
 import createClasses, { type ClassHelpers } from "burrowkit/classes.js";
+import FilteredView, { SearchCache, type ViewEntry, type ViewGroup } from "burrowkit/filtered-view.js";
 import Highlighter, { type MatchPart } from "burrowkit/highlighter.js";
 import Languages, { type CountedText, type PluralForms } from "burrowkit/languages.js";
 import validLocale from "burrowkit/locale.js";
@@ -28,6 +29,28 @@ const may: boolean = Search.mayMatch(prepared.folded, query);
 const plain: string = Search.fold("Zürich");
 // @ts-expect-error match takes a prepared text
 Search.match("New York City", query);
+
+// Filtered view: a component's own entries, matched by the texts it names.
+interface Entry extends ViewEntry {
+    label: string;
+    value: string;
+}
+const group: ViewGroup = { label: "Fruit" };
+const entries: Entry[] = [{ label: "Apple", value: "a", group, dividerBefore: false }];
+const cache = new SearchCache(() => 4 * entries.length + 100);
+const view = new FilteredView(entries, Search.fold("ap", "en"), {
+    fold: text => cache.fold(text, "en"),
+    prepare: text => cache.prepare(text, "en"),
+    texts: entry => [entry.label, entry.value],
+});
+const pulled: Entry[] = view.pull(50, 8);
+const size: number = view.size + view.count();
+const more: boolean = view.hasMore && view.includes(entries[0]) && view.textMatches(entries[0]);
+const located: MatchPart[] | null = view.locate("Apple");
+const grouped: boolean = view.groupMatches(group) && view.hasDividerBefore(entries[0]);
+new FilteredView(entries, "", { fold: text => text, prepare: text => Search.prepare(text), texts: () => [], tiered: false });
+// @ts-expect-error an entry needs a group and dividerBefore
+new FilteredView([{ label: "x" }], "", { fold: t => t, prepare: Search.prepare, texts: () => [] });
 
 // Locale.
 const locale: string | undefined = validLocale("de-AT");
