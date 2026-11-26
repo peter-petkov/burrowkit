@@ -1,0 +1,140 @@
+name: Release and publish burrowkit to npm
+
+on:
+  push:
+    tags:
+      - '*'
+
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release and publish. Expected format: X, X.Y, or X.Y.Z"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  issues: write
+  id-token: write
+
+jobs:
+  release-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Determine version
+        id: version
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION="${GITHUB_REF_NAME}"
+          fi
+
+          if [[ ! "${VERSION}" =~ ^[0-9]+(\.[0-9]+){0,2}$ ]]; then
+            echo "Invalid version format: ${VERSION}"
+            echo "Expected format: X, X.Y, or X.Y.Z where each part contains only digits."
+            exit 1
+          fi
+
+          # npm needs all three parts, so a tag like 2.0 is published as 2.0.0.
+          NPM_VERSION="${VERSION}"
+          while [[ ! "${NPM_VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; do NPM_VERSION="${NPM_VERSION}.0"; done
+
+          echo "Using version: ${VERSION} (npm ${NPM_VERSION})"
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "npm-version=${NPM_VERSION}" >> "${GITHUB_OUTPUT}"
+
+      - name: Create Git tag if run manually
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
+          if git rev-parse "${VERSION}" >/dev/null 2>&1; then
+            echo "Tag ${VERSION} already exists locally."
+          else
+            git tag "${VERSION}"
+            git push origin "${VERSION}"
+          fi
+
+      - name: Checkout release tag
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ steps.version.outputs.version }}
+          fetch-depth: 0
+
+      - name: Create GitHub label for version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh label create "${{ steps.version.outputs.version }}" \
+            --color 0366d6 \
+            --description "Release version ${{ steps.version.outputs.version }}" \
+            || echo "Label already exists"
+
+      - name: Create GitHub release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
+          # The notes are the version's section of CHANGELOG.md, from its "## <version>" heading to the next one, with
+          # the README's relative links made absolute. A version without a section, like a bugfix release, gets
+          # GitHub's generated notes instead.
+          awk -v heading="## ${VERSION}" '
+            { sub(/\r$/, "") }
+            /^## / { if (found) exit; if ($0 == heading) { found = 1; next } }
+            found
+          ' CHANGELOG.md \
+            | sed "s#](README.md#](https://github.com/${{ github.repository }}/blob/${VERSION}/README.md#g" \
+            > release-notes.md
+
+          if [[ -s release-notes.md ]] && grep -q '[^[:space:]]' release-notes.md; then
+            NOTES=(--notes-file release-notes.md)
+          else
+            NOTES=(--generate-notes)
+          fi
+
+          if gh release view "${VERSION}" >/dev/null 2>&1; then
+            echo "Release ${VERSION} already exists."
+          else
+            gh release create "${VERSION}" \
+              --title "${VERSION}" \
+              "${NOTES[@]}" \
+              --draft=false \
+              --prerelease=false
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # There's no build: the components' dist/ bundles inline the core. The type definitions are checked instead.
+      - name: Check the type definitions
+        run: npm run check:types
+
+      # package.json is bumped with each release too, so it may say the version already, which npm version only
+      # accepts with --allow-same-version.
+      - name: Set package version
+        run: npm version "${{ steps.version.outputs.npm-version }}" --no-git-tag-version --allow-same-version
+
+      # A version that's on npm already (a first release published by hand, before the trusted publisher could be set
+      # up, or a rerun) is skipped rather than failing the run.
+      - name: Publish to npm
+        run: |
+          NPM_VERSION="${{ steps.version.outputs.npm-version }}"
+          if [[ "$(npm view "burrowkit@${NPM_VERSION}" version 2>/dev/null)" == "${NPM_VERSION}" ]]; then
+            echo "burrowkit@${NPM_VERSION} is on npm already."
+          else
+            npm publish --provenance --access public
+          fi
