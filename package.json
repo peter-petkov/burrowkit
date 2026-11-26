@@ -11,6 +11,7 @@
   "private": false,
   "type": "module",
   "exports": {
+    "./tools/*": "./tools/*",
     "./*": "./src/*"
   },
   "author": "Peter Petkov",
@@ -24,7 +25,8 @@
     "url": "git+https://github.com/peter-petkov/burrowkit.git"
   },
   "files": [
-    "src"
+    "src",
+    "tools"
   ],
   "devDependencies": {
     "typescript": "^5.9.3"
