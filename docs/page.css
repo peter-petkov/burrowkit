@@ -553,7 +553,8 @@ p {
     }
 }
 
-.field-row:has(:disabled) {
+/* Its own field, not one inside a component in the row (a picker's hidden buttons). */
+.field-row:has(> :disabled) {
     opacity: 0.5;
 }
 
