@@ -1,6 +1,7 @@
 // Uses every public member the way a component does, so that npm run check:types fails when the definitions drift
 // from the code. Lines marked @ts-expect-error must stay errors. Nothing here runs.
 import createClasses, { type ClassHelpers } from "burrowkit/classes.js";
+import createDecorations, { type Decorations } from "burrowkit/decorations.js";
 import FilteredView, { SearchCache, type ViewEntry, type ViewGroup } from "burrowkit/filtered-view.js";
 import Highlighter, { type MatchPart } from "burrowkit/highlighter.js";
 import Languages, { type CountedText, type PluralForms } from "burrowkit/languages.js";
@@ -103,5 +104,19 @@ toggleClasses(element, "itemSelected");
 const menuClass: string | undefined = fixedClass("menu");
 // @ts-expect-error not a part
 helpers.addClasses(element, "nope");
+
+// Decorations: images and icons with the component's classes.
+type DecoratedPart = "image" | "icon" | "label";
+const decorated = createClasses<DecoratedPart>({ image: "ex-image", icon: "ex-icon", label: "ex-label" }, {});
+const decorations: Decorations<DecoratedPart> = createDecorations(decorated);
+const { syncImage, syncIcon, hideBrokenImages, brokenClass } = createDecorations(decorated);
+const labelElement = document.createElement("span");
+let icon: HTMLElement | null = syncIcon(null, "🧀", "icon", labelElement);
+const image: HTMLImageElement | null = syncImage(null, "flags/de.svg", "image", icon ?? labelElement);
+icon = decorations.syncIcon(icon, "", "icon", labelElement);
+hideBrokenImages(element, ["image"], new AbortController().signal);
+const broken: string = brokenClass("image");
+// @ts-expect-error not a part
+syncIcon(null, "x", "nope", labelElement);
 
 export {};
