@@ -1,0 +1,2 @@
+/** The locale if it's a valid language tag, otherwise undefined, which Intl reads as the browser's own language. */
+export default function validLocale(locale: string | null | undefined): string | undefined;
