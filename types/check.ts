@@ -5,6 +5,7 @@ import createDecorations, { type Decorations } from "burrowkit/decorations.js";
 import FilteredView, { SearchCache, type ViewEntry, type ViewGroup } from "burrowkit/filtered-view.js";
 import Highlighter, { type MatchPart } from "burrowkit/highlighter.js";
 import Languages, { type CountedText, type PluralForms } from "burrowkit/languages.js";
+import RowList, { type ListPart, type RowRecord } from "burrowkit/list.js";
 import validLocale from "burrowkit/locale.js";
 import Search, { type Match, type PreparedText } from "burrowkit/search.js";
 
@@ -52,6 +53,42 @@ const grouped: boolean = view.groupMatches(group) && view.hasDividerBefore(entri
 new FilteredView(entries, "", { fold: text => text, prepare: text => Search.prepare(text), texts: () => [], tiered: false });
 // @ts-expect-error an entry needs a group and dividerBefore
 new FilteredView([{ label: "x" }], "", { fold: t => t, prepare: Search.prepare, texts: () => [] });
+
+// Row list: rows of the component's own, from a filtered view.
+const listClasses = createClasses<ListPart>({ list: "ex-list", group: "ex-group" }, {});
+const popover = document.createElement("div");
+const rowList = new RowList<Entry, { text: Text }>({
+    container: popover,
+    classes: listClasses,
+    highlighter,
+    signal: new AbortController().signal,
+    hooks: {
+        createRow: entry => {
+            const element = document.createElement("li");
+            const text = document.createTextNode(entry.label);
+            element.append(text);
+            return { element, text };
+        },
+        updateRow: record => { record.text.data = record.entry.label; },
+        highlightRow: (record, view) => rowList.highlightText(view, record.element, "text", record.text),
+        scroller: () => popover,
+        loadMore: ({ batchSize }) => batchSize.toFixed(),
+    },
+});
+rowList.configure({ batchSize: 50, placeholders: 3, loading: true });
+rowList.show(view);
+rowList.renderMore(rowList.stepSize, Infinity);
+rowList.reconcile(view);
+const record: RowRecord<Entry, { text: Text }> | undefined = rowList.recordOf(entries[0]);
+const rowText: string | undefined = record?.text.data;
+const rendered: boolean = rowList.ensureRendered(entries[0]) && rowList.hasMore && rowList.isBatched;
+const shownCount: number = rowList.shownCount + rowList.rows.length;
+rowList.reveal(rowList.element, true);
+rowList.renderHeader(group);
+rowList.destroy();
+new RowList<Entry, {}>({ container: popover, classes: listClasses, highlighter, signal: new AbortController().signal,
+    // @ts-expect-error createRow must return an element
+    hooks: { createRow: () => ({}), updateRow: () => {}, highlightRow: () => {}, scroller: () => popover } });
 
 // Locale.
 const locale: string | undefined = validLocale("de-AT");
