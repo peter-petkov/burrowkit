@@ -1,6 +1,6 @@
 {
   "name": "burrowkit",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "The shared core of a family of web components that enhance native form controls: search, highlighting, languages, class plugs and a phone sheet.",
   "keywords": [
     "custom-element",
@@ -10,8 +10,19 @@
   ],
   "private": false,
   "type": "module",
+  "exports": {
+    "./*": "./src/*"
+  },
   "author": "Peter Petkov",
   "license": "MIT",
+  "homepage": "https://github.com/peter-petkov/burrowkit#readme",
+  "bugs": {
+    "url": "https://github.com/peter-petkov/burrowkit/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/peter-petkov/burrowkit.git"
+  },
   "files": [
     "src"
   ]
