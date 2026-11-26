@@ -12,6 +12,7 @@
   "type": "module",
   "exports": {
     "./tools/*": "./tools/*",
+    "./docs/*": "./docs/*",
     "./*": "./src/*"
   },
   "author": "Peter Petkov",
@@ -26,7 +27,8 @@
   },
   "files": [
     "src",
-    "tools"
+    "tools",
+    "docs"
   ],
   "devDependencies": {
     "typescript": "^5.9.3"
