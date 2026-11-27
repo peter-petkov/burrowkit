@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2
+
+- `announcer.js`: `Announcer`, the status line for screen readers that Platypicker and Datalynx each kept, as a polite live region on an element the component makes. `say()` speaks now (emptied first, so a repeat is heard), `sayLater()` once typing pauses; one message is pending at a time and the latest wins. With its `.d.ts`.
+
 ## 0.1
 
 The first release: the modules [Platypicker](https://github.com/peter-petkov/platypicker) and [Datalynx](https://github.com/peter-petkov/datalynx) share, moved in from Platypicker. See the [README](README.md) for what each one does.
