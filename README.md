@@ -1,6 +1,6 @@
 # Burrowkit
 
-The shared core of a family of web components that enhance native form controls while the native element stays the real control. It holds mechanisms, not looks or texts: search (folding, initials, strong matches first), match highlighting, the language engine, the class-plug mechanism, image and icon decorations, the list rendering and the screen-reader status line; the phone sheet is to follow.
+The shared core of a family of web components that enhance native form controls while the native element stays the real control. It holds mechanisms, not looks or texts: search (folding, initials, strong matches first), match highlighting, the language engine, the class-plug mechanism, image and icon decorations, the list rendering, the screen-reader status line and the CSS they share; the phone sheet is to follow.
 
 Its users are [Platypicker](https://github.com/peter-petkov/platypicker), for `<select>`, and [Datalynx](https://github.com/peter-petkov/datalynx), for `<input list>`. Nothing in it names either: anything page-wide (CSS highlight names, class and variable prefixes) is named by the component that uses it, so two versions of the core can share a page.
 
@@ -35,6 +35,44 @@ A docs page that loads a component's `src/` straight in the browser maps the nam
 | `filtered-view.js` | `FilteredView`: the entries matching a search, found lazily; strong matches first, groups moving as a whole with their best match, rows never reordered within a tier. `SearchCache` remembers folded and prepared texts. |
 | `list.js` | `RowList`: the rows of a `FilteredView`, rendered a batch at a time as the list scrolls, in time slices; keeps rows across changes, renders group headers and dividers, numbers rows for screen readers, moves between rows by keyboard. What a row shows is the component's, through hooks. |
 
+## Shared CSS
+
+Plain CSS can't take a class or variable prefix as a parameter, so the CSS the components share is a template written in placeholder names, `src/styles/popover.css`, which a component copies into its own stylesheet under its own names. It holds what is the same in each: the popover's positioning, the tokens, the layout of the list, its rows and the screen-reader status line, the search highlight, and the shared paint and forced colors. What differs stays in the component's own rules: which row is active (hover, focus or selection, with its forced colors), the rows' inline padding, the reset of the list's items, and everything of its own, the control's `anchor-name` among it.
+
+| Placeholder | Replaced by | With `host: "x-picker"`, `prefix: "xp"`, `name: "xpicker"` |
+|---|---|---|
+| `burrow-host` | `host`, the element | `x-picker` |
+| `.bk-*` | `prefix`, the classes | `.xp-item` |
+| `--_bk-*`, `--_bk-skin-*` | `prefix`, the private tokens and the values a skin sets | `--_xp-hover`, `--_xp-skin-hover-bg` |
+| `bk-skin` | `prefix`, the class a skin adds to the element to turn paint off | `xp-skin` |
+| `--burrowkit-*` | `name`, the variables a page sets | `--xpicker-hover-bg` |
+| `--burrowkit`, `--burrowkit-above` | `name`, the anchor and the `@position-try` | `--xpicker`, `--xpicker-above` |
+| `burrowkit-highlight`, `burrowkit-pulse` | `name`, the CSS highlight and the keyframes | `xpicker-highlight`, `xpicker-pulse` |
+
+The component's stylesheet carries two marker comments where the shared rules go, each on a line of its own, inside its `@supports` and before its own rules, so that its rules win where the specificity is equal. The component's control sets `anchor-name: --xpicker` there, since only the component knows what its control is.
+
+```css
+/* Burrowkit popover.css begin */
+/* Burrowkit popover.css end */
+```
+
+A thin `tools/sync-css.mjs` fills the region between them:
+
+```js
+import { fileURLToPath } from "node:url";
+import { syncCss } from "burrowkit/tools/sync-css.mjs";
+
+await syncCss({
+    root: fileURLToPath(new URL("..", import.meta.url)),
+    css: "xpicker.css",  // In src/.
+    host: "x-picker",
+    prefix: "xp",
+    name: "xpicker",
+});
+```
+
+with the scripts `"sync:css": "node tools/sync-css.mjs"` and `"check:css": "node tools/sync-css.mjs --check"`. Run `npm run sync:css` after a change to the template or a new Burrowkit version, and commit the result: the stylesheet stays complete plain CSS, with no `@import` and no build step. `npm run check:css` changes nothing and exits non-zero when the region differs from the installed Burrowkit's (the first marker names the version, so another version differs too). Run it in CI before the build, where it also catches a template change that isn't released yet. Edits inside the region are lost on the next sync.
+
 ## Tools
 
 Node scripts a component calls from thin `tools/` files of its own (`burrowkit/tools/<tool>.mjs`):
@@ -44,6 +82,7 @@ Node scripts a component calls from thin `tools/` files of its own (`burrowkit/t
 | `serve.mjs` | `createStaticServer(root)`, or `node node_modules/burrowkit/tools/serve.mjs <root> [port]`: the static server for developing, with `/` leading to the docs page; in an npm workspace, `/node_modules/` paths fall back to the workspace's. |
 | `build.mjs` | `build(settings)`: a component's `dist/`, with esbuild (the component's own dev dependency): a plain script and a module for the component and each skin, minified too, and the stylesheet; Burrowkit and the translations bundled in. |
 | `browser-check.mjs` | `check(settings)`: opens the docs page headless in the installed Firefox or Chrome, or Playwright's WebKit, and reports what the browser supports and how many elements were enhanced; can run a script and save a screenshot. |
+| `sync-css.mjs` | `syncCss(settings)`: writes the shared CSS into a component's stylesheet, or checks it with `--check` (see [Shared CSS](#shared-css)). |
 
 ## Docs
 

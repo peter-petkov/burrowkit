@@ -1,0 +1,245 @@
+/*
+ * The template of the CSS the components share: the popover, the list and its rows, their tokens, layout and paint.
+ * Nothing imports it. tools/sync-css.mjs writes it, without this comment, into a marked region of a component's own
+ * stylesheet, with the placeholder names below replaced by the component's:
+ *   burrow-host                          the element, e.g. x-picker
+ *   .bk-*, --_bk-*, --_bk-skin-*         its prefix: classes, private tokens and a skin's values
+ *   bk-skin                              the class a skin adds to the element
+ *   --burrowkit, --burrowkit-*,          its name: the anchor, the public variables, the @position-try, the
+ *   burrowkit-highlight, burrowkit-pulse highlight and the keyframes
+ *
+ * Only what is the same in every component belongs here. What differs stays in the component's own rules, which come
+ * after the region and so win where the specificity is equal: which row is active (hover, focus or selection, and its
+ * forced colors), the rows' inline padding, the reset of the list's items.
+ */
+
+/* Must live at the top level, not nested inside burrow-host. */
+@position-try --burrowkit-above {
+    top: auto;
+    bottom: calc(anchor(top) + .25rem);
+}
+
+@keyframes burrowkit-pulse {
+    50% {
+        opacity: .4;
+    }
+}
+
+/* Structure. */
+burrow-host {
+    display: contents;
+    anchor-scope: --burrowkit;
+
+    [hidden] {
+        display: none !important;
+    }
+
+    /* The popover, anchored below the control, or above it when there's no room. Fixed positioning measures it
+       against the viewport, which the fallback needs to flip it. */
+    > .bk-menu[popover] {
+        position: fixed;
+        display: revert; /* Undoes display: none from a framework's menu class, so [popover] decides. */
+        position-anchor: --burrowkit;
+        position-try-fallbacks: --burrowkit-above;
+        inset: auto;
+        margin: 0;
+        top: calc(anchor(bottom) + .25rem);
+        inset-inline-start: anchor(inside); /* The control's start edge, whichever way the page reads. */
+        min-width: anchor-size(width);
+        max-width: max(anchor-size(width), 20rem);
+        max-height: var(--burrowkit-max-height, 45vh);
+        overflow: auto;
+        overscroll-behavior: contain;
+    }
+}
+
+/* Tokens: each value is the page's --burrowkit-* variable if it sets one, then a skin's --_bk-skin-* value, then the
+   default. A skin sets its values on burrow-host itself, so they follow themes set on part of the page, while the
+   page's variables still win from any ancestor. */
+burrow-host {
+    --_bk-bg: var(--burrowkit-bg, var(--_bk-skin-bg, light-dark(#ffffff, #222225)));
+    --_bk-color: var(--burrowkit-color, var(--_bk-skin-color, light-dark(#1d1c1a, #ececee)));
+    --_bk-muted: var(--burrowkit-muted-color, var(--_bk-skin-muted-color, light-dark(#6e6c68, #97979e)));
+    --_bk-header: var(--burrowkit-header-color, var(--_bk-skin-header-color, light-dark(#5f5e5a, #b0b0b6)));
+    --_bk-border: var(--burrowkit-border-color, var(--_bk-skin-border-color, light-dark(#e3e1dc, #36363b)));
+    --_bk-field-border: var(--burrowkit-field-border-color, var(--_bk-skin-field-border-color, light-dark(#c4c1bb, #48484e)));
+    --_bk-hover: var(--burrowkit-hover-bg, var(--_bk-skin-hover-bg, light-dark(#f0efec, #2d2d31)));
+    --_bk-accent: var(--burrowkit-accent-color, var(--_bk-skin-accent-color, light-dark(#1f63d6, #7aaefc)));
+    --_bk-highlight-bg: var(--burrowkit-highlight-bg, var(--_bk-skin-highlight-bg, light-dark(#fde58a, #d99a1e)));
+    --_bk-highlight-color: var(--burrowkit-highlight-color, var(--_bk-skin-highlight-color, light-dark(#1d1c1a, #16120a)));
+    --_bk-radius: var(--burrowkit-radius, var(--_bk-skin-radius, 6px));
+    --_bk-menu-radius: var(--burrowkit-menu-radius, var(--_bk-skin-menu-radius, 8px));
+    --_bk-shadow: var(--burrowkit-shadow, var(--_bk-skin-shadow,
+        0 8px 24px light-dark(rgb(0 0 0 / .12), rgb(0 0 0 / .4)),
+        0 2px 6px light-dark(rgb(0 0 0 / .08), rgb(0 0 0 / .3))));
+}
+
+/* Layout: how the parts sit, which a skin keeps. One notch above a single class, so a framework class on a part
+   (say, one that makes it display: block) can't break it, whichever stylesheet loads first. */
+burrow-host {
+    .bk-list {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr); /* Long labels are cut short instead of widening the rows. */
+        margin: 0;
+        list-style: none;
+    }
+
+    /* A group: its header and rows sit in the list's grid as if the group weren't there. */
+    :is(.bk-group, .bk-group-list) {
+        display: contents;
+        list-style: none;
+    }
+
+    /* A row: an image and an icon if its entry has them, the label, its subtext at the end. */
+    .bk-item {
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        width: 100%;
+        text-align: start;
+    }
+
+    /* A fixed square, so a row doesn't jump as its image arrives. The whole picture shows, letterboxed if it isn't
+       square. One that fails to load is hidden (see Burrowkit's decorations.js). An icon is as wide, so labels after
+       either line up. */
+    :is(.bk-item-image, .bk-item-icon) {
+        flex: none;
+        width: var(--burrowkit-image-size, 1.25em);
+    }
+
+    .bk-item-image {
+        height: var(--burrowkit-image-size, 1.25em);
+        object-fit: contain;
+
+        &.bk-item-image-broken {
+            display: none;
+        }
+    }
+
+    .bk-item-icon {
+        line-height: 1;
+        text-align: center;
+    }
+
+    .bk-item-label {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .bk-item-subtext {
+        white-space: nowrap;
+
+        &:empty {
+            display: none;
+        }
+    }
+
+    /* What screen readers hear, such as the match count: in the page, but not on screen. Taken out of the flow and
+       pinned to the top, where it never moves the page's layout nor makes the popover scroll. */
+    .bk-status {
+        position: absolute;
+        inset: 0 auto auto 0;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+
+    /* Skeleton rows, shown at the end of the list while more rows are to come. */
+    .bk-placeholder {
+        flex: 1;
+    }
+
+    /* Search matches. */
+    :is(.bk-header, .bk-item-label, .bk-item-subtext)::highlight(burrowkit-highlight) {
+        color: var(--_bk-highlight-color);
+        background-color: var(--_bk-highlight-bg);
+    }
+
+    /* Forced colors, as in Windows High Contrast: the browser swaps every color for a system one. A forced background
+       would hide the skeleton bars, so they draw in a system color of their own. */
+    @media (forced-colors: active) {
+        .bk-placeholder-bar {
+            forced-color-adjust: none;
+            background-color: GrayText;
+        }
+
+        :is(.bk-header, .bk-item-label, .bk-item-subtext)::highlight(burrowkit-highlight) {
+            color: MarkText;
+            background-color: Mark;
+        }
+    }
+}
+
+/* Paint: colors, borders, spacing and type, with the specificity of a single class. A skin (which adds the bk-skin
+   class to burrow-host) leaves these to its framework's classes. */
+:where(burrow-host:not(.bk-skin)) {
+    .bk-menu {
+        box-sizing: border-box;
+        padding: 0;
+        font: inherit;
+        color: var(--_bk-color);
+        background: var(--_bk-bg);
+        border: 1px solid var(--_bk-field-border);
+        border-radius: var(--_bk-menu-radius);
+        box-shadow: var(--_bk-shadow);
+    }
+
+    .bk-list {
+        gap: 1px;
+        padding: .25rem;
+    }
+
+    .bk-item {
+        margin: 0;
+        padding-block: .3125rem;
+        font: inherit;
+        line-height: 1.5;
+        color: inherit;
+        background: none;
+        border: 0;
+        border-radius: var(--_bk-radius);
+        cursor: pointer;
+    }
+
+    .bk-item-subtext {
+        font-size: .8125em;
+        font-weight: 400;
+        color: var(--_bk-muted);
+    }
+
+    .bk-header {
+        margin: 0;
+        padding: .5rem .625rem .125rem;
+        font-size: .75em;
+        font-weight: 400;
+        line-height: 1.5;
+        color: var(--_bk-header);
+    }
+
+    .bk-divider {
+        height: 0;
+        margin: .25rem .375rem;
+        border: 0;
+        border-top: 1px solid var(--_bk-border);
+        opacity: 1;
+    }
+
+    .bk-placeholder-bar {
+        display: block;
+        height: .75em;
+        margin-block: .375em;
+        background: var(--_bk-border);
+        border-radius: 999px;
+        animation: burrowkit-pulse 1.5s ease-in-out infinite;
+
+        @media (prefers-reduced-motion: reduce) {
+            animation: none;
+        }
+    }
+}
