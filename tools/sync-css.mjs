@@ -28,6 +28,11 @@ export async function syncCss({ root, css, host, prefix, name, template = "popov
     if (unknown.length) throw new Error(`Unknown argument ${unknown[0]}; the only one is --check.`);
     const check = args.includes("--check");
 
+    // A setting left out would be written into the stylesheet as "undefined".
+    const missing = Object.entries({ root, css, host, prefix, name })
+        .find(([, value]) => typeof value !== "string" || !value);
+    if (missing) throw new Error(`syncCss() needs ${missing[0]}.`);
+
     const { version } = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
     const source = await readFile(new URL(`../src/styles/${template}`, import.meta.url), "utf8");
 
