@@ -1,5 +1,6 @@
 // Uses every public member the way a component does, so that npm run check:types fails when the definitions drift
 // from the code. Lines marked @ts-expect-error must stay errors. Nothing here runs.
+import Announcer, { type Message } from "burrowkit/announcer.js";
 import createClasses, { type ClassHelpers } from "burrowkit/classes.js";
 import createDecorations, { type Decorations } from "burrowkit/decorations.js";
 import FilteredView, { SearchCache, type ViewEntry, type ViewGroup } from "burrowkit/filtered-view.js";
@@ -20,6 +21,18 @@ highlighter.drop(element, "label");
 highlighter.clear();
 // @ts-expect-error the highlight needs a name
 new Highlighter();
+
+// Announcer: a status line the component made.
+const announcer = new Announcer(document.createElement("div"));
+const message: Message = () => "3 matches";
+announcer.sayLater(message, 500);
+announcer.say("Zürich");
+announcer.clear();
+announcer.cancel();
+const said: string = announcer.text;
+const region: HTMLElement = announcer.element;
+// @ts-expect-error sayLater needs a delay
+announcer.sayLater("x");
 
 // Search.
 const query: string = Search.fold("NYC", "en");

@@ -1,6 +1,6 @@
 # Burrowkit
 
-The shared core of a family of web components that enhance native form controls while the native element stays the real control. It holds mechanisms, not looks or texts: search (folding, initials, strong matches first), match highlighting, the language engine, the class-plug mechanism, image and icon decorations, and the list rendering; the phone sheet is to follow.
+The shared core of a family of web components that enhance native form controls while the native element stays the real control. It holds mechanisms, not looks or texts: search (folding, initials, strong matches first), match highlighting, the language engine, the class-plug mechanism, image and icon decorations, the list rendering and the screen-reader status line; the phone sheet is to follow.
 
 Its users are [Platypicker](https://github.com/peter-petkov/platypicker), for `<select>`, and [Datalynx](https://github.com/peter-petkov/datalynx), for `<input list>`. Nothing in it names either: anything page-wide (CSS highlight names, class and variable prefixes) is named by the component that uses it, so two versions of the core can share a page.
 
@@ -29,6 +29,7 @@ A docs page that loads a component's `src/` straight in the browser maps the nam
 | `locale.js` | `validLocale(tag)`: the tag if it's a valid language tag, otherwise undefined (the browser's own language). |
 | `highlighter.js` | `Highlighter`: wraps the CSS Custom Highlight API, under a highlight name the component gives; instances sharing a name share the highlight, and each removes only its own ranges. |
 | `languages.js` | `Languages`: a component's texts in the language of its nearest `lang` (across shadow roots), translations loaded on demand from the component's own folder, page-registered languages winning text by text, plural forms by `Intl.PluralRules`. |
+| `announcer.js` | `Announcer`: a status line for screen readers (a polite live region) on an element the component makes: `say()` now, emptied first so a repeat is heard, or `sayLater()` once typing pauses, the latest message replacing a pending one. |
 | `classes.js` | `createClasses(fixed, classes)`: puts each part's fixed class (in the component's prefix) and its plug (extra classes a skin or the page fills) on the component's elements. |
 | `decorations.js` | `createDecorations(classes)`: the image (`data-image`) and icon (`data-icon`) before an entry's label, with the component's classes; a broken image gets a `-broken` class. |
 | `filtered-view.js` | `FilteredView`: the entries matching a search, found lazily; strong matches first, groups moving as a whole with their best match, rows never reordered within a tier. `SearchCache` remembers folded and prepared texts. |
