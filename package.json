@@ -1,6 +1,6 @@
 {
   "name": "burrowkit",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "The shared core of a family of web components that enhance native form controls: search, highlighting, languages, class plugs and a phone sheet.",
   "keywords": [
     "custom-element",

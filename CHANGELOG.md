@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3
+
+- `styles/popover.css`: the popover and row CSS Platypicker and Datalynx each kept, as a template in placeholder names: positioning, tokens, the layout of the list, its rows and the screen-reader status line, the search highlight, the shared paint and forced colors.
+- `tools/sync-css.mjs`: `syncCss()` writes that template, under a component's own names, into a marked and committed region of its stylesheet; `--check` fails when the region differs from the installed version's. See [Shared CSS](README.md#shared-css).
+
 ## 0.2
 
 - `announcer.js`: `Announcer`, the status line for screen readers that Platypicker and Datalynx each kept, as a polite live region on an element the component makes. `say()` speaks now (emptied first, so a repeat is heard), `sayLater()` once typing pauses; one message is pending at a time and the latest wins. With its `.d.ts`.
